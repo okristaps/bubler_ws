@@ -1,9 +1,9 @@
-import { Game } from './game';
+import { Game, GameState } from './game';
 import { Player } from './player';
 
 const SCORE_DEDUCTION = 10;
-const BUBBLE_GENERATION_RATE = 5;
-const BUBBLE_CYCLE_INTERVAL = 3000;
+const BUBBLE_GENERATION_RATE = 1;
+const BUBBLE_CYCLE_INTERVAL = 1000;
 
 export function handleWebSocket(request: Request): Response {
 	const pair = new WebSocketPair();
@@ -16,42 +16,40 @@ export function handleWebSocket(request: Request): Response {
 	let currentPlayerSocket: WebSocket | null = server;
 
 	function sendBubbles() {
-		if (game && currentPlayerSocket) {
-			const newBubbles = game.generateBubbles(BUBBLE_GENERATION_RATE);
+		if (game && game.currentState === GameState.Playing && currentPlayerSocket) {
+			game.generateBubbles(BUBBLE_GENERATION_RATE);
 			const allBubbles = game.getAllBubbles();
 			if (currentPlayerSocket.readyState === WebSocket.OPEN) {
-				currentPlayerSocket.send(JSON.stringify({ type: 'bubble-update', bubbles: allBubbles }));
+				currentPlayerSocket.send(JSON.stringify({ type: 'game-state', bubbles: allBubbles, lives: game.lives, score: game.player.score }));
 			}
 		}
 	}
 
-	function checkForExpiredBubbles() {
-		if (game) {
-			const now = Date.now();
-			let expiredBubbleCount = 0;
+	setInterval(() => {
+		if (game && game.currentState === GameState.Playing) {
+			game.checkExpiredBubbles(server);
 
-			game.bubbles.forEach((bubble, id) => {
-				if (now - bubble.createdAt > 10000) {
-					game?.bubbles.delete(id);
-					expiredBubbleCount++;
-				}
-			});
+			server.send(
+				JSON.stringify({
+					type: 'game-state',
+					bubbles: game.getAllBubbles(),
+					score: game.player.score,
+					lives: game.lives,
+				})
+			);
 
-			if (expiredBubbleCount > 0) {
-				console.log(`❌ ${expiredBubbleCount} bubbles expired! Deducting score.`);
-				game.player.score = Math.max(0, game.player.score - SCORE_DEDUCTION * expiredBubbleCount);
-				if (currentPlayerSocket?.readyState === WebSocket.OPEN) {
-					currentPlayerSocket.send(JSON.stringify({ type: 'score-update', score: game.player.score }));
-				}
+			if (game.lives <= 0) {
+				game.endGame();
+				console.log(`💀 GAME OVER for ${game.player.username}`);
+				server.send(JSON.stringify({ type: 'game-over', message: 'Game Over! You ran out of lives.' }));
 			}
 		}
-	}
+	}, 100);
 
 	const bubbleInterval = setInterval(() => {
 		if (currentPlayerSocket && currentPlayerSocket.readyState === WebSocket.OPEN) {
 			currentPlayerSocket.send(JSON.stringify({ type: 'ping', message: 'Keeping connection alive.' }));
 			sendBubbles();
-			checkForExpiredBubbles();
 		}
 	}, BUBBLE_CYCLE_INTERVAL);
 
@@ -67,11 +65,12 @@ export function handleWebSocket(request: Request): Response {
 			}
 
 			const data = JSON.parse(message);
-
 			if (data.type === 'join') {
 				const playerId = crypto.randomUUID();
 				const player = new Player(playerId, data.username, data.wallet);
+				console.log('player', player);
 				game = new Game(player);
+				game.startGame();
 				server.send(JSON.stringify({ type: 'welcome', message: `Welcome ${player.username}!` }));
 			}
 			if (data.type === 'start-game' && game) {
@@ -84,16 +83,10 @@ export function handleWebSocket(request: Request): Response {
 				const popped = game.popBubble(data.bubbleId);
 				if (popped) {
 					console.log(`🎯 ${game.player.username} popped a bubble!`);
-					server.send(JSON.stringify({ type: 'bubble-popped', score: game.player.score }));
+					server.send(JSON.stringify({ type: 'bubble-popped', score: game.player.score, lives: game.lives }));
 				} else {
 					server.send(JSON.stringify({ type: 'invalid-pop', message: 'Bubble not found!' }));
 				}
-			}
-
-			if (data.type === 'missed-bubble' && game) {
-				console.log(`❌ Bubble missed! Deducting ${SCORE_DEDUCTION} points.`);
-				game.player.score = Math.max(0, game.player.score - SCORE_DEDUCTION);
-				server.send(JSON.stringify({ type: 'score-update', score: game.player.score }));
 			}
 
 			if (game && game.player.isCheating(game.getMaxAllowedScore())) {

@@ -1,42 +1,67 @@
 import { Player } from './player';
 
+export enum GameState {
+	Lobby = 'lobby',
+	Playing = 'playing',
+	Finished = 'finished',
+	Paused = 'paused',
+}
+
 const MAX_BUBBLES = 150;
 const BUBBLE_LIFETIME_MS = 10000;
 const MIN_SPEED = 1;
 const MAX_SPEED = 2;
-const SCORE_DEDUCTION = 5;
+const SCORE_DEDUCTION = 100;
+const LIVES_DEDUCTION = 1;
 const POINTS_PER_BUBBLE = 10;
+const MAX_LIVES = 1;
 
 export class Game {
 	id: string;
 	player: Player;
+	currentState: GameState;
+	lives: number;
 	bubbles: Map<string, { id: string; x: number; y: number; size: number; speed: number; createdAt: number }>;
 	totalBubblesGenerated: number = 0;
 
 	constructor(player: Player) {
 		this.id = crypto.randomUUID();
 		this.player = player;
+		this.lives = MAX_LIVES;
 		this.bubbles = new Map();
+		this.currentState = GameState.Lobby;
 	}
 
 	resetGame() {
 		this.player.score = 0;
+		this.lives = MAX_LIVES;
 		this.bubbles.clear();
 		this.totalBubblesGenerated = 0;
+		this.currentState = GameState.Lobby;
 	}
 
-	//
-
-	generateBubbles(count: number) {
+	checkExpiredBubbles(server: WebSocket) {
 		const now = Date.now();
-		const newBubbles = [];
+		const expiredBubbles = [];
+
 		for (const [id, bubble] of this.bubbles) {
 			if (now - bubble.createdAt > BUBBLE_LIFETIME_MS) {
-				console.log(`❌ Bubble expired! Deducting ${SCORE_DEDUCTION} points.`);
+				console.log(`❌ Bubble expired! Deducting ${SCORE_DEDUCTION} points & ${LIVES_DEDUCTION} life.`);
 				this.player.score = Math.max(0, this.player.score - SCORE_DEDUCTION);
+				this.lives -= LIVES_DEDUCTION;
+				expiredBubbles.push(id);
 				this.bubbles.delete(id);
 			}
 		}
+
+		if (this.lives <= 0) {
+			console.log(`💀 GAME OVER for ${this.player.username}`);
+			server.send(JSON.stringify({ type: 'game-over', message: 'Game Over! You ran out of lives.' }));
+		}
+	}
+
+	generateBubbles(count: number) {
+		const newBubbles = [];
 
 		for (let i = 0; i < count; i++) {
 			if (this.bubbles.size >= MAX_BUBBLES) break;
@@ -48,7 +73,7 @@ export class Game {
 			const speed = Math.random() * (MAX_SPEED - MIN_SPEED) + MIN_SPEED;
 
 			if (!this.bubbles.has(id)) {
-				const bubble = { id, x, y, size, speed, createdAt: now };
+				const bubble = { id, x, y, size, speed, createdAt: Date.now() };
 				this.bubbles.set(id, bubble);
 				newBubbles.push(bubble);
 				this.totalBubblesGenerated++;
@@ -56,6 +81,18 @@ export class Game {
 		}
 
 		return newBubbles;
+	}
+
+	getAllBubbles() {
+		return Array.from(this.bubbles.values());
+	}
+
+	endGame() {
+		this.currentState = GameState.Finished;
+	}
+
+	startGame() {
+		this.currentState = GameState.Playing;
 	}
 
 	getMaxAllowedScore(): number {
@@ -74,9 +111,5 @@ export class Game {
 			return true;
 		}
 		return false;
-	}
-
-	getAllBubbles() {
-		return Array.from(this.bubbles.values());
 	}
 }

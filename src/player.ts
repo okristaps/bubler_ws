@@ -10,6 +10,7 @@ export class Player {
 		this.id = id;
 		this.username = username;
 		this.wallet = wallet;
+		console.log(`🎮 New Player Created: ${username} (Wallet: ${wallet}, ID: ${id})`);
 	}
 
 	increaseScore(points: number) {
