@@ -1,8 +1,7 @@
 import { Game, GameState } from './game';
 import { Player } from './player';
 
-const SCORE_DEDUCTION = 10;
-const BUBBLE_GENERATION_RATE = 1;
+const BUBBLE_GENERATION_RATE = 2;
 const BUBBLE_CYCLE_INTERVAL = 1000;
 
 export function handleWebSocket(request: Request): Response {
@@ -28,23 +27,17 @@ export function handleWebSocket(request: Request): Response {
 	setInterval(() => {
 		if (game && game.currentState === GameState.Playing) {
 			game.checkExpiredBubbles(server);
-
 			server.send(
 				JSON.stringify({
 					type: 'game-state',
 					bubbles: game.getAllBubbles(),
 					score: game.player.score,
 					lives: game.lives,
+					currentState: game.currentState,
 				})
 			);
-
-			if (game.lives <= 0) {
-				game.endGame();
-				console.log(`💀 GAME OVER for ${game.player.username}`);
-				server.send(JSON.stringify({ type: 'game-over', message: 'Game Over! You ran out of lives.' }));
-			}
 		}
-	}, 100);
+	}, 50);
 
 	const bubbleInterval = setInterval(() => {
 		if (currentPlayerSocket && currentPlayerSocket.readyState === WebSocket.OPEN) {
@@ -68,30 +61,12 @@ export function handleWebSocket(request: Request): Response {
 			if (data.type === 'join') {
 				const playerId = crypto.randomUUID();
 				const player = new Player(playerId, data.username, data.wallet);
-				console.log('player', player);
 				game = new Game(player);
 				game.startGame();
-				server.send(JSON.stringify({ type: 'welcome', message: `Welcome ${player.username}!` }));
-			}
-			if (data.type === 'start-game' && game) {
-				game.resetGame();
-				server.send(JSON.stringify({ type: 'game-started', message: 'Game has started!' }));
-				sendBubbles();
 			}
 
 			if (data.type === 'pop' && game) {
-				const popped = game.popBubble(data.bubbleId);
-				if (popped) {
-					console.log(`🎯 ${game.player.username} popped a bubble!`);
-					server.send(JSON.stringify({ type: 'bubble-popped', score: game.player.score, lives: game.lives }));
-				} else {
-					server.send(JSON.stringify({ type: 'invalid-pop', message: 'Bubble not found!' }));
-				}
-			}
-
-			if (game && game.player.isCheating(game.getMaxAllowedScore())) {
-				game.player.score = 0;
-				server.send(JSON.stringify({ type: 'cheater-detected', message: 'You have been disqualified!' }));
+				game.popBubble(data.bubbleId);
 			}
 		} catch (error) {
 			console.error('❌ Invalid message received:', event.data);

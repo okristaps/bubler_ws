@@ -9,12 +9,12 @@ export enum GameState {
 
 const MAX_BUBBLES = 150;
 const BUBBLE_LIFETIME_MS = 10000;
-const MIN_SPEED = 1;
-const MAX_SPEED = 2;
+const MIN_SPEED = 3;
+const MAX_SPEED = 5;
 const SCORE_DEDUCTION = 100;
 const LIVES_DEDUCTION = 1;
 const POINTS_PER_BUBBLE = 10;
-const MAX_LIVES = 1;
+const MAX_LIVES = 5;
 
 export class Game {
 	id: string;
@@ -43,10 +43,8 @@ export class Game {
 	checkExpiredBubbles(server: WebSocket) {
 		const now = Date.now();
 		const expiredBubbles = [];
-
 		for (const [id, bubble] of this.bubbles) {
 			if (now - bubble.createdAt > BUBBLE_LIFETIME_MS) {
-				console.log(`❌ Bubble expired! Deducting ${SCORE_DEDUCTION} points & ${LIVES_DEDUCTION} life.`);
 				this.player.score = Math.max(0, this.player.score - SCORE_DEDUCTION);
 				this.lives -= LIVES_DEDUCTION;
 				expiredBubbles.push(id);
@@ -55,8 +53,7 @@ export class Game {
 		}
 
 		if (this.lives <= 0) {
-			console.log(`💀 GAME OVER for ${this.player.username}`);
-			server.send(JSON.stringify({ type: 'game-over', message: 'Game Over! You ran out of lives.' }));
+			this.endGame();
 		}
 	}
 
@@ -67,8 +64,8 @@ export class Game {
 			if (this.bubbles.size >= MAX_BUBBLES) break;
 
 			const id = crypto.randomUUID();
-			const size = Math.floor(Math.random() * 50) + 20;
-			const x = Math.random() * 100;
+			const size = Math.floor(Math.random() * 100) + 20;
+			const x = Math.random() * 75;
 			const y = 0;
 			const speed = Math.random() * (MAX_SPEED - MIN_SPEED) + MIN_SPEED;
 
@@ -103,11 +100,6 @@ export class Game {
 		if (this.bubbles.has(bubbleId)) {
 			this.bubbles.delete(bubbleId);
 			this.player.increaseScore(POINTS_PER_BUBBLE);
-			if (this.player.isCheating(this.getMaxAllowedScore())) {
-				this.player.score = 0;
-				return false;
-			}
-
 			return true;
 		}
 		return false;
