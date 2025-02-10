@@ -10,7 +10,6 @@ export class Player {
 		this.id = id;
 		this.username = username;
 		this.wallet = wallet;
-		console.log(`🎮 New Player Created: ${username} (Wallet: ${wallet}, ID: ${id})`);
 	}
 
 	increaseScore(points: number) {
@@ -25,7 +24,6 @@ export class Player {
 	isCheating(maxAllowedScore: number): boolean {
 		const now = Date.now();
 		if (this.score > maxAllowedScore) {
-			console.log(`🚨 CHEATING DETECTED! Player ${this.username} exceeded ${maxAllowedScore} points.`);
 			return true;
 		}
 

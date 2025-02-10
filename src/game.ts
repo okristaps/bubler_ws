@@ -7,6 +7,14 @@ export enum GameState {
 	Paused = 'paused',
 }
 
+function seededRandom(seed: number) {
+	let value = seed;
+	return function () {
+		value = (value * 16807) % 2147483647; // ✅ Linear congruential generator (LCG)
+		return (value - 1) / 2147483646;
+	};
+}
+
 const MAX_BUBBLES = 150;
 const BUBBLE_LIFETIME_MS = 10000;
 const MIN_SPEED = 3;
@@ -44,13 +52,17 @@ export class Game {
 	startTime: number | null = null;
 	elapsedTime: number = 0;
 	lastImpossibleBubbleSpawn: number = 0;
+	seed: number;
+	rng: () => number; // ✅ Store seeded random function at game level
 
-	constructor(player: Player) {
+	constructor(player: Player, seed: number) {
 		this.id = crypto.randomUUID();
 		this.player = player;
 		this.lives = MAX_LIVES;
 		this.bubbles = new Map();
 		this.currentState = GameState.Lobby;
+		this.seed = seed;
+		this.rng = seededRandom(seed);
 	}
 
 	startGame() {
@@ -89,8 +101,8 @@ export class Game {
 		}
 	}
 
-	private getRandomBubbleType() {
-		const rand = Math.random() * 100;
+	private getRandomBubbleType(rng: () => number) {
+		const rand = rng() * 100;
 		let cumulativeProbability = 0;
 
 		for (const bubbleType of BUBBLE_TYPES) {
@@ -103,47 +115,20 @@ export class Game {
 		return BUBBLE_TYPES[0];
 	}
 
-	private maybeSpawnImpossibleBubble() {
-		const now = Date.now();
-		if (now - this.lastImpossibleBubbleSpawn >= IMPOSSIBLE_BUBBLE_INTERVAL) {
-			this.lastImpossibleBubbleSpawn = now;
-
-			const id = crypto.randomUUID();
-			const size = Math.floor(Math.random() * 20) + 10;
-			const x = Math.random() * 75;
-			const y = 0;
-			const speed = Math.random() * 2 + 6;
-
-			const impossibleBubble = {
-				id,
-				x,
-				y,
-				size,
-				speed,
-				createdAt: now,
-				score: 1000,
-				type: IMPOSSIBLE_BUBBLE_TYPE,
-				color: '#000000',
-			};
-			this.bubbles.set(id, impossibleBubble);
-		}
-	}
-
 	generateBubbles(count: number) {
 		if (this.currentState !== GameState.Playing) return [];
 
 		const newBubbles = [];
-		this.maybeSpawnImpossibleBubble();
 
 		for (let i = 0; i < count; i++) {
 			if (this.bubbles.size >= MAX_BUBBLES) break;
 
 			const id = crypto.randomUUID();
-			const size = Math.floor(Math.random() * 100) + 20;
-			const x = Math.random() * 75;
+			const size = Math.floor(this.rng() * 100) + 20; // ✅ Use game-level RNG
+			const x = this.rng() * 75;
 			const y = 0;
-			const speed = Math.random() * (MAX_SPEED - MIN_SPEED) + MIN_SPEED;
-			const bubbleType = this.getRandomBubbleType();
+			const speed = this.rng() * (MAX_SPEED - MIN_SPEED) + MIN_SPEED;
+			const bubbleType = this.getRandomBubbleType(this.rng);
 
 			if (!this.bubbles.has(id)) {
 				const bubble = {

@@ -1,7 +1,7 @@
 import { Game, GameState } from './game';
 import { Player } from './player';
 
-const BUBBLE_GENERATION_RATE = 2;
+const BUBBLE_GENERATION_RATE = 3;
 const BUBBLE_CYCLE_INTERVAL = 1000;
 
 export function handleWebSocket(request: Request): Response {
@@ -61,7 +61,7 @@ export function handleWebSocket(request: Request): Response {
 			if (data.type === 'join') {
 				const playerId = crypto.randomUUID();
 				const player = new Player(playerId, data.username, data.wallet);
-				game = new Game(player);
+				game = new Game(player, 123213123);
 				game.startGame();
 			}
 
