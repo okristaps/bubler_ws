@@ -37,7 +37,7 @@ export function handleWebSocket(request: Request): Response {
 				})
 			);
 		}
-	}, 50);
+	}, 500);
 
 	const bubbleInterval = setInterval(() => {
 		if (currentPlayerSocket && currentPlayerSocket.readyState === WebSocket.OPEN) {
