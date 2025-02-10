@@ -53,7 +53,7 @@ export class Game {
 	elapsedTime: number = 0;
 	lastImpossibleBubbleSpawn: number = 0;
 	seed: number;
-	rng: () => number; // ✅ Store seeded random function at game level
+	rng: () => number;
 
 	constructor(player: Player, seed: number) {
 		this.id = crypto.randomUUID();

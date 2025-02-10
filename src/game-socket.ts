@@ -1,7 +1,7 @@
 import { Game, GameState } from './game';
 import { Player } from './player';
 
-const BUBBLE_GENERATION_RATE = 3;
+const BUBBLE_GENERATION_RATE = 2;
 const BUBBLE_CYCLE_INTERVAL = 1000;
 
 export function handleWebSocket(request: Request): Response {
