@@ -24,6 +24,12 @@ export function handleWebSocket(request: Request): Response {
 		}
 	}
 
+	const formatTime = (timeInSeconds: number) => {
+		const minutes = Math.floor(timeInSeconds / 60);
+		const seconds = Math.floor(timeInSeconds % 60);
+		return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+	};
+
 	setInterval(() => {
 		if (game && game.currentState === GameState.Playing) {
 			game.checkExpiredBubbles(server);
@@ -34,10 +40,17 @@ export function handleWebSocket(request: Request): Response {
 					score: game.player.score,
 					lives: game.lives,
 					currentState: game.currentState,
+					elapsedTime: formatTime(game.elapsedTime),
 				})
 			);
 		}
-	}, 500);
+	}, 100);
+
+	setInterval(() => {
+		if (game && game.currentState === GameState.Playing) {
+			game.ellapseTime();
+		}
+	}, 1000);
 
 	const bubbleInterval = setInterval(() => {
 		if (currentPlayerSocket && currentPlayerSocket.readyState === WebSocket.OPEN) {

@@ -124,7 +124,7 @@ export class Game {
 			if (this.bubbles.size >= MAX_BUBBLES) break;
 
 			const id = crypto.randomUUID();
-			const size = Math.floor(this.rng() * 100) + 20; // ✅ Use game-level RNG
+			const size = Math.floor(this.rng() * 100) + 20;
 			const x = this.rng() * 75;
 			const y = 0;
 			const speed = this.rng() * (MAX_SPEED - MIN_SPEED) + MIN_SPEED;
@@ -183,5 +183,9 @@ export class Game {
 			return true;
 		}
 		return false;
+	}
+
+	ellapseTime() {
+		this.elapsedTime += 1;
 	}
 }
