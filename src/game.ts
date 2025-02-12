@@ -10,7 +10,7 @@ export enum GameState {
 function seededRandom(seed: number) {
 	let value = seed;
 	return function () {
-		value = (value * 16807) % 2147483647; // ✅ Linear congruential generator (LCG)
+		value = (value * 16807) % 2147483647;
 		return (value - 1) / 2147483646;
 	};
 }
@@ -27,16 +27,16 @@ const IMPOSSIBLE_BUBBLE_TYPE = 'Impossible';
 const IMPOSSIBLE_BUBBLE_INTERVAL = 60000;
 
 const BUBBLE_TYPES = [
-	{ type: 'Common', score: 5, probability: 30, color: '#add8e6' },
-	{ type: 'Standard', score: 10, probability: 25, color: '#6495ed' },
-	{ type: 'Large', score: 15, probability: 20, color: '#4682b4' },
-	{ type: 'Super', score: 20, probability: 10, color: '#4169e1' },
-	{ type: 'Ultra', score: 30, probability: 5, color: '#800080' },
-	{ type: 'Epic', score: 50, probability: 3, color: '#ff4500' },
-	{ type: 'Legendary', score: 100, probability: 2, color: '#ff1493' },
-	{ type: 'Mythic', score: 200, probability: 1, color: '#ff8c00' },
-	{ type: 'Godlike', score: 500, probability: 0.5, color: '#ff0000' },
-	{ type: 'Impossible', score: 1000, probability: 0.1, color: '#000000' },
+	{ type: 'Common', score: 5, probability: 30, image: 'bubler' },
+	{ type: 'Standard', score: 10, probability: 25, image: 'ai' },
+	{ type: 'Large', score: 15, probability: 20, image: 'bebts' },
+	{ type: 'Super', score: 20, probability: 10, image: 'bobonbob' },
+	{ type: 'Ultra', score: 30, probability: 5, image: 'cloud' },
+	{ type: 'Epic', score: 50, probability: 3, image: 'dog' },
+	{ type: 'Legendary', score: 100, probability: 2, image: 'omnity' },
+	{ type: 'Mythic', score: 200, probability: 1, image: 'ruggy' },
+	{ type: 'Godlike', score: 500, probability: 0.5, image: 'tits' },
+	{ type: 'Impossible', score: 1000, probability: 0.1, image: 'bublerrich' },
 ];
 
 export class Game {
@@ -46,7 +46,7 @@ export class Game {
 	lives: number;
 	bubbles: Map<
 		string,
-		{ id: string; x: number; y: number; size: number; speed: number; createdAt: number; score: number; type: string; color: string }
+		{ id: string; x: number; y: number; size: number; speed: number; createdAt: number; score: number; type: string; image: string }
 	>;
 	totalBubblesGenerated: number = 0;
 	startTime: number | null = null;
@@ -140,7 +140,7 @@ export class Game {
 					createdAt: Date.now(),
 					score: bubbleType.score,
 					type: bubbleType.type,
-					color: bubbleType.color,
+					image: bubbleType.image,
 				};
 				this.bubbles.set(id, bubble);
 				newBubbles.push(bubble);
