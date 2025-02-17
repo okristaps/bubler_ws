@@ -24,16 +24,16 @@ const LIVES_DEDUCTION = 1;
 const MAX_LIVES = 5;
 
 const BUBBLE_TYPES = [
-	{ type: 'Common', score: 5, probability: 30, image: 'bubler' },
-	{ type: 'Standard', score: 10, probability: 25, image: 'ai' },
-	{ type: 'Large', score: 15, probability: 20, image: 'bebts' },
-	{ type: 'Super', score: 20, probability: 10, image: 'bobonbob' },
-	{ type: 'Ultra', score: 30, probability: 5, image: 'cloud' },
-	{ type: 'Epic', score: 50, probability: 3, image: 'dog' },
-	{ type: 'Legendary', score: 100, probability: 2, image: 'omnity' },
-	{ type: 'Mythic', score: 200, probability: 1, image: 'ruggy' },
-	{ type: 'Godlike', score: 500, probability: 0.5, image: 'tits' },
-	{ type: 'Impossible', score: 1000, probability: 0.1, image: 'bublerrich' },
+	{ type: 'Common', score: 5, probability: 30, image: '1' },
+	{ type: 'Standard', score: 10, probability: 25, image: '2' },
+	{ type: 'Large', score: 15, probability: 20, image: '3' },
+	{ type: 'Super', score: 20, probability: 10, image: '4' },
+	{ type: 'Ultra', score: 30, probability: 5, image: '5' },
+	{ type: 'Epic', score: 50, probability: 3, image: '6' },
+	{ type: 'Legendary', score: 100, probability: 2, image: '7' },
+	{ type: 'Mythic', score: 200, probability: 1, image: '8' },
+	{ type: 'Godlike', score: 500, probability: 0.5, image: '9' },
+	{ type: 'Impossible', score: 1000, probability: 0.1, image: '10' },
 ];
 
 export class Game {
