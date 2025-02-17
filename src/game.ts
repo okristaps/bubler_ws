@@ -1,10 +1,20 @@
+import ICPClient from '../clients/icpClient';
 import { Player } from './player';
 
 export enum GameState {
+	Error = 'error',
 	Lobby = 'lobby',
 	Playing = 'playing',
 	Finished = 'finished',
 	Paused = 'paused',
+}
+
+function convertToMMSS(milliseconds: number): string {
+	const totalSeconds = Math.floor(milliseconds / 1000);
+	const minutes = Math.floor(totalSeconds / 60);
+	const seconds = totalSeconds % 60;
+
+	return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
 function seededRandom(seed: number) {
@@ -41,6 +51,7 @@ export class Game {
 	player: Player;
 	currentState: GameState;
 	lives: number;
+	gameId?: string;
 	bubbles: Map<
 		string,
 		{ id: string; x: number; y: number; size: number; speed: number; createdAt: number; score: number; type: string; image: string }
@@ -50,22 +61,34 @@ export class Game {
 	elapsedTime: number = 0;
 	lastImpossibleBubbleSpawn: number = 0;
 	seed: number;
-	rng: () => number;
+	rng?: () => number;
+	icpClient: ICPClient;
 
-	constructor(player: Player, seed: number) {
+	constructor(player: Player, icpClient: ICPClient) {
 		this.id = crypto.randomUUID();
 		this.player = player;
 		this.lives = MAX_LIVES;
 		this.bubbles = new Map();
 		this.currentState = GameState.Lobby;
-		this.seed = seed;
-		this.rng = seededRandom(seed);
+		this.seed = 0;
+		this.rng = undefined;
+		this.icpClient = icpClient;
+		this.gameId = undefined;
 	}
 
-	startGame() {
-		this.currentState = GameState.Playing;
+	async startGame() {
 		this.startTime = Date.now();
 		this.lastImpossibleBubbleSpawn = this.startTime;
+		await this.icpClient.savePlayer(this.player.wallet, this.player.username);
+		const game = await this.icpClient.startGame(this.player.wallet);
+		if (game?.gameId && game?.seed) {
+			this.gameId = game?.gameId;
+			this.seed = game?.seed;
+			this.rng = seededRandom(this.seed);
+			this.currentState = GameState.Playing;
+		} else {
+			this.currentState = GameState.Error;
+		}
 	}
 
 	resetGame() {
@@ -113,16 +136,15 @@ export class Game {
 	}
 
 	generateBubbles(count: number) {
-		if (this.currentState !== GameState.Playing) return [];
-
+		if (this.currentState !== GameState.Playing || !this.rng) return [];
 		const newBubbles = [];
 
 		for (let i = 0; i < count; i++) {
 			if (this.bubbles.size >= MAX_BUBBLES) break;
 
 			const id = crypto.randomUUID();
-			const size = Math.floor(this.rng() * 100) + 100;
-			const x = this.rng() * 75;
+			const size = Math.floor(this?.rng() * 100) + 100;
+			const x = this?.rng() * 75;
 			const y = 0;
 			const speed = this.rng() * (MAX_SPEED - MIN_SPEED) + MIN_SPEED;
 			const bubbleType = this.getRandomBubbleType(this.rng);
@@ -152,9 +174,10 @@ export class Game {
 		return Array.from(this.bubbles.values());
 	}
 
-	endGame() {
+	async endGame() {
 		this.currentState = GameState.Finished;
-		this.elapsedTime += Date.now() - (this.startTime ?? 0);
+		this.elapsedTime = this.elapsedTime += Date.now() - (this.startTime ?? 0);
+		await this.icpClient.finishGame(this.gameId ?? '', this.player.score, convertToMMSS(this.elapsedTime));
 	}
 
 	pauseGame() {

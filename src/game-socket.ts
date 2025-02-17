@@ -1,13 +1,16 @@
 import { Game, GameState } from './game';
+import { Env } from './index';
 import { Player } from './player';
-
+import ICPClient from '../clients/icpClient';
 const BUBBLE_GENERATION_RATE = 2;
 const BUBBLE_CYCLE_INTERVAL = 1000;
 
-export function handleWebSocket(request: Request, env: any): Response {
+export function handleWebSocket(request: Request, env: Env): Response {
 	const pair = new WebSocketPair();
 	const client = pair[0];
 	const server = pair[1];
+
+	const icpClient = new ICPClient(env);
 
 	server.accept();
 
@@ -74,7 +77,7 @@ export function handleWebSocket(request: Request, env: any): Response {
 			if (data.type === 'join') {
 				const playerId = crypto.randomUUID();
 				const player = new Player(playerId, data.username, data.wallet);
-				game = new Game(player, 123213123);
+				game = new Game(player, icpClient);
 				game.startGame();
 			}
 

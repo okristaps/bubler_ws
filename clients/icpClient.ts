@@ -4,6 +4,16 @@ import { Env } from '../src';
 import { Ed25519KeyIdentity } from '@dfinity/identity';
 import { Buffer } from 'buffer';
 
+interface GameSession {
+	startedAt: number;
+	username: string;
+	seed: number;
+	gameId: string;
+	score: number;
+	wallet: string;
+	timePlayed: string;
+}
+
 export default class ICPClient {
 	private agent: HttpAgent;
 	private backend: any;
@@ -76,6 +86,72 @@ export default class ICPClient {
 		} catch (error) {
 			console.error('❌ Failed to save player:', error);
 			return false;
+		}
+	}
+
+	async startGame(wallet: string): Promise<GameSession | null> {
+		if (!this.identity) {
+			console.error('User identity is missing.');
+			return null;
+		}
+
+		try {
+			const response = await this.backend.startGame(wallet);
+
+			if (!response || !Array.isArray(response) || response.length === 0) {
+				console.error('Invalid response format or empty response.');
+				return null;
+			}
+
+			const rawGameSession = response[0];
+
+			const gameSession: GameSession = {
+				startedAt: Number(rawGameSession.startedAt),
+				username: rawGameSession.username,
+				seed: Number(rawGameSession.seed),
+				gameId: rawGameSession.gameId,
+				score: Number(rawGameSession.score),
+				wallet: rawGameSession.wallet,
+				timePlayed: rawGameSession.timePlayed,
+			};
+
+			return gameSession;
+		} catch (error) {
+			console.error('Error starting game:', error);
+			return null;
+		}
+	}
+
+	async finishGame(gameId: string, finalScore: number, finalTimePlayed: string): Promise<GameSession | null> {
+		if (!this.identity) {
+			console.error('User identity is missing.');
+			return null;
+		}
+
+		try {
+			const response = await this.backend.finishGame(gameId, finalScore, finalTimePlayed);
+
+			if (!response || !Array.isArray(response) || response.length === 0) {
+				console.error('Invalid response format or empty response.');
+				return null;
+			}
+
+			const rawGameSession = response[0];
+
+			const gameSession: GameSession = {
+				startedAt: Number(rawGameSession.startedAt),
+				username: rawGameSession.username,
+				seed: Number(rawGameSession.seed),
+				gameId: rawGameSession.gameId,
+				score: Number(rawGameSession.score),
+				wallet: rawGameSession.wallet,
+				timePlayed: rawGameSession.timePlayed,
+			};
+
+			return gameSession;
+		} catch (error) {
+			console.error('Error finishing game:', error);
+			return null;
 		}
 	}
 }

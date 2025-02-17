@@ -19,7 +19,6 @@ export const idlFactory = ({ IDL }) => {
 		removeAdmin: IDL.Func([IDL.Principal], [IDL.Bool], []),
 		savePlayer: IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
 		startGame: IDL.Func([IDL.Text], [IDL.Opt(GameSession)], []),
-		updateScore: IDL.Func([IDL.Text, IDL.Nat, IDL.Text], [IDL.Bool], []),
 	});
 };
 export const init = ({ IDL }) => {
