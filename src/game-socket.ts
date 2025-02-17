@@ -4,7 +4,7 @@ import { Player } from './player';
 const BUBBLE_GENERATION_RATE = 2;
 const BUBBLE_CYCLE_INTERVAL = 1000;
 
-export function handleWebSocket(request: Request): Response {
+export function handleWebSocket(request: Request, env: any): Response {
 	const pair = new WebSocketPair();
 	const client = pair[0];
 	const server = pair[1];

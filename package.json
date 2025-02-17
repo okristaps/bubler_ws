@@ -12,8 +12,17 @@
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.6.4",
     "@cloudflare/workers-types": "^4.20250204.0",
+    "@types/node": "^22.13.4",
     "typescript": "^5.5.2",
     "vitest": "2.1.8",
     "wrangler": "^3.107.3"
+  },
+  "dependencies": {
+    "@dfinity/agent": "^2.3.0",
+    "@dfinity/auth-client": "^2.3.0",
+    "@dfinity/candid": "^2.3.0",
+    "@dfinity/identity": "^2.3.0",
+    "@dfinity/identity-secp256k1": "^2.3.0",
+    "@dfinity/principal": "^2.3.0"
   }
 }

@@ -21,10 +21,7 @@ const MIN_SPEED = 3;
 const MAX_SPEED = 5;
 const SCORE_DEDUCTION = 100;
 const LIVES_DEDUCTION = 1;
-const POINTS_PER_BUBBLE = 10;
 const MAX_LIVES = 5;
-const IMPOSSIBLE_BUBBLE_TYPE = 'Impossible';
-const IMPOSSIBLE_BUBBLE_INTERVAL = 60000;
 
 const BUBBLE_TYPES = [
 	{ type: 'Common', score: 5, probability: 30, image: 'bubler' },
@@ -124,7 +121,7 @@ export class Game {
 			if (this.bubbles.size >= MAX_BUBBLES) break;
 
 			const id = crypto.randomUUID();
-			const size = Math.floor(this.rng() * 100) + 20;
+			const size = Math.floor(this.rng() * 100) + 100;
 			const x = this.rng() * 75;
 			const y = 0;
 			const speed = this.rng() * (MAX_SPEED - MIN_SPEED) + MIN_SPEED;
