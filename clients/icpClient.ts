@@ -3,6 +3,7 @@ import { idlFactory } from '../defenitions/index';
 import { Env } from '../src';
 import { Ed25519KeyIdentity } from '@dfinity/identity';
 import { Buffer } from 'buffer';
+import { formatTime } from '../src/utils';
 
 interface GameSession {
 	startedAt: number;
@@ -122,14 +123,14 @@ export default class ICPClient {
 		}
 	}
 
-	async finishGame(gameId: string, finalScore: number, finalTimePlayed: string): Promise<GameSession | null> {
+	async finishGame(gameId: string, finalScore: number, finalTimePlayed: number): Promise<GameSession | null> {
 		if (!this.identity) {
 			console.error('User identity is missing.');
 			return null;
 		}
 
 		try {
-			const response = await this.backend.finishGame(gameId, finalScore, finalTimePlayed);
+			const response = await this.backend.finishGame(gameId, finalScore, formatTime(finalTimePlayed));
 
 			if (!response || !Array.isArray(response) || response.length === 0) {
 				console.error('Invalid response format or empty response.');

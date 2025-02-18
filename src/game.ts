@@ -176,8 +176,7 @@ export class Game {
 
 	async endGame() {
 		this.currentState = GameState.Finished;
-		this.elapsedTime = this.elapsedTime += Date.now() - (this.startTime ?? 0);
-		await this.icpClient.finishGame(this.gameId ?? '', this.player.score, convertToMMSS(this.elapsedTime));
+		await this.icpClient.finishGame(this.gameId ?? '', this.player.score, this.elapsedTime);
 	}
 
 	pauseGame() {

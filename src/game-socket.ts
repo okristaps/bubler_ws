@@ -2,6 +2,7 @@ import { Game, GameState } from './game';
 import { Env } from './index';
 import { Player } from './player';
 import ICPClient from '../clients/icpClient';
+import { formatTime } from './utils';
 const BUBBLE_GENERATION_RATE = 2;
 const BUBBLE_CYCLE_INTERVAL = 1000;
 
@@ -20,18 +21,8 @@ export function handleWebSocket(request: Request, env: Env): Response {
 	function sendBubbles() {
 		if (game && game.currentState === GameState.Playing && currentPlayerSocket) {
 			game.generateBubbles(BUBBLE_GENERATION_RATE);
-			const allBubbles = game.getAllBubbles();
-			if (currentPlayerSocket.readyState === WebSocket.OPEN) {
-				currentPlayerSocket.send(JSON.stringify({ type: 'game-state', bubbles: allBubbles, lives: game.lives, score: game.player.score }));
-			}
 		}
 	}
-
-	const formatTime = (timeInSeconds: number) => {
-		const minutes = Math.floor(timeInSeconds / 60);
-		const seconds = Math.floor(timeInSeconds % 60);
-		return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-	};
 
 	setInterval(() => {
 		if (game && game.currentState === GameState.Playing) {
@@ -47,7 +38,7 @@ export function handleWebSocket(request: Request, env: Env): Response {
 				})
 			);
 		}
-	}, 100);
+	}, 200);
 
 	setInterval(() => {
 		if (game && game.currentState === GameState.Playing) {
