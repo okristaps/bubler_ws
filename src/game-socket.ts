@@ -1,9 +1,9 @@
-import { Game, GameState } from './game';
+import { Game } from './game';
 import { Env } from './index';
 import { Player } from './player';
 import ICPClient from '../clients/icpClient';
 import { formatTime } from './utils';
-const BUBBLE_GENERATION_RATE = 2;
+import { GameState } from './types';
 const BUBBLE_CYCLE_INTERVAL = 1000;
 
 export function handleWebSocket(request: Request, env: Env): Response {
@@ -17,26 +17,47 @@ export function handleWebSocket(request: Request, env: Env): Response {
 
 	let game: Game | null = null;
 	let currentPlayerSocket: WebSocket | null = server;
-
+	let gameOverSent = false;
 	function sendBubbles() {
 		if (game && game.currentState === GameState.Playing && currentPlayerSocket) {
-			game.generateBubbles(BUBBLE_GENERATION_RATE);
+			game.generateBubbles();
 		}
 	}
 
-	setInterval(() => {
-		if (game && game.currentState === GameState.Playing) {
-			game.checkExpiredBubbles(server);
-			server.send(
-				JSON.stringify({
-					type: 'game-state',
-					bubbles: game.getAllBubbles(),
-					score: game.player.score,
-					lives: game.lives,
-					currentState: game.currentState,
-					elapsedTime: formatTime(game.elapsedTime),
-				})
-			);
+	const gameInterval = setInterval(() => {
+		if (game) {
+			if (game.currentState === GameState.Playing) {
+				game.checkExpiredBubbles(server);
+
+				server.send(
+					JSON.stringify({
+						type: 'game-state',
+						bubbles: game.getAllBubbles(),
+						score: game.player.score,
+						lives: game.lives,
+						currentState: game.currentState,
+						elapsedTime: formatTime(game.elapsedTime),
+						timeLimit: formatTime(game.timeLimit),
+					})
+				);
+			} else if (game.currentState === GameState.Finished && !gameOverSent) {
+				gameOverSent = true;
+				server.send(
+					JSON.stringify({
+						type: 'game-over',
+						finalScore: game.player.score,
+						elapsedTime: formatTime(game.elapsedTime),
+						timeLimit: formatTime(game.timeLimit),
+					})
+				);
+				setTimeout(() => {
+					server.close();
+					clearInterval(gameInterval);
+					clearInterval(bubbleInterval);
+					game = null;
+					currentPlayerSocket = null;
+				}, 1000);
+			}
 		}
 	}, 200);
 
