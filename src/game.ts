@@ -9,14 +9,6 @@ export enum GameState {
 	Paused = 'paused',
 }
 
-function convertToMMSS(milliseconds: number): string {
-	const totalSeconds = Math.floor(milliseconds / 1000);
-	const minutes = Math.floor(totalSeconds / 60);
-	const seconds = totalSeconds % 60;
-
-	return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-}
-
 function seededRandom(seed: number) {
 	let value = seed;
 	return function () {
@@ -34,16 +26,20 @@ const LIVES_DEDUCTION = 1;
 const MAX_LIVES = 5;
 
 const BUBBLE_TYPES = [
-	{ type: 'Common', score: 5, probability: 30, image: '1' },
-	{ type: 'Standard', score: 10, probability: 25, image: '2' },
-	{ type: 'Large', score: 15, probability: 20, image: '3' },
-	{ type: 'Super', score: 20, probability: 10, image: '4' },
-	{ type: 'Ultra', score: 30, probability: 5, image: '5' },
-	{ type: 'Epic', score: 50, probability: 3, image: '6' },
-	{ type: 'Legendary', score: 100, probability: 2, image: '7' },
-	{ type: 'Mythic', score: 200, probability: 1, image: '8' },
-	{ type: 'Godlike', score: 500, probability: 0.5, image: '9' },
-	{ type: 'Impossible', score: 1000, probability: 0.1, image: '10' },
+	{ type: 'Common', score: 25, probability: 15, image: '1' },
+	{ type: 'Standard', score: 45, probability: 8, image: '2' },
+	{ type: 'Large', score: 45, probability: 8, image: '3' },
+	{ type: 'Super', score: 45, probability: 8, image: '4' },
+	{ type: 'Ultra', score: 45, probability: 8, image: '5' },
+	{ type: 'Epic', score: 45, probability: 8, image: '6' },
+	{ type: 'Legendary', score: 45, probability: 8, image: '7' },
+	{ type: 'Mythic', score: 70, probability: 8, image: '8' },
+	{ type: 'Godlike', score: 45, probability: 8, image: '9' },
+	{ type: 'Impossible', score: 170, probability: 3, image: '13' },
+	{ type: 'Impossible', score: 45, probability: 8, image: '10' },
+	{ type: 'Impossible', score: 45, probability: 8, image: '12' },
+	{ type: 'Impossible', score: 45, probability: 8, image: '14' },
+	{ type: 'Impossible', score: 45, probability: 8, image: '15' },
 ];
 
 export class Game {
@@ -135,18 +131,26 @@ export class Game {
 		return BUBBLE_TYPES[0];
 	}
 
-	generateBubbles(count: number) {
+	generateBubbles() {
 		if (this.currentState !== GameState.Playing || !this.rng) return [];
+
+		const baseSpawnRate = 3;
+		const additionalBubbles = Math.floor(this.elapsedTime / 120);
+		const bubblesToGenerate = Math.min(baseSpawnRate + additionalBubbles, MAX_BUBBLES - this.bubbles.size, 6); // Hard cap at 6
+
 		const newBubbles = [];
 
-		for (let i = 0; i < count; i++) {
+		for (let i = 0; i < bubblesToGenerate; i++) {
 			if (this.bubbles.size >= MAX_BUBBLES) break;
 
 			const id = crypto.randomUUID();
-			const size = Math.floor(this?.rng() * 100) + 100;
+			const size = Math.floor(this?.rng() * 50) + 50;
 			const x = this?.rng() * 75;
 			const y = 0;
-			const speed = this.rng() * (MAX_SPEED - MIN_SPEED) + MIN_SPEED;
+
+			const speedMultiplier = 1 + this.elapsedTime / 500;
+			const speed = (this.rng() * (MAX_SPEED - MIN_SPEED) + MIN_SPEED) * speedMultiplier;
+
 			const bubbleType = this.getRandomBubbleType(this.rng);
 
 			if (!this.bubbles.has(id)) {
