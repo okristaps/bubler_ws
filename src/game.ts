@@ -1,6 +1,6 @@
 import ICPClient from '../clients/icpClient';
 import { Player } from './player';
-import { Bubble, BUBBLE_TYPES, BubbleType, EffectType, GameEffect, GameState } from './types';
+import { Bubble, BubbleType, EffectType, GameEffect, GameState, SPECIAL_TYPES } from './types';
 import { createDefaultEffects, getRandomBubbleType, seededRandom } from './utils';
 
 const MAX_BUBBLES = 150;
@@ -13,7 +13,6 @@ const GAME_TIME_LIMIT = 300;
 const MAX_LIVES = 5;
 const TIME_BONUS = 10;
 const HEART_BONUS = 1;
-const SPECIAL_BUBBLE_PROBABILITY = 0.01;
 
 export class Game {
 	id: string;
@@ -31,6 +30,7 @@ export class Game {
 	pausedAt?: number;
 	icpClient: ICPClient;
 	effects: Record<EffectType, GameEffect>;
+	hasSpecialBubble: boolean = false;
 
 	constructor(player: Player, icpClient: ICPClient) {
 		this.id = crypto.randomUUID();
@@ -81,11 +81,17 @@ export class Game {
 
 		for (const [id, bubble] of this.bubbles) {
 			if (bubble.timeLivedMs >= BUBBLE_LIFETIME_MS) {
-				this.player.score = Math.max(0, this.player.score - SCORE_DEDUCTION);
-				this.lives -= LIVES_DEDUCTION;
+				if (!SPECIAL_TYPES.includes(bubble.type)) {
+					this.player.score = Math.max(0, this.player.score - SCORE_DEDUCTION);
+					this.lives -= LIVES_DEDUCTION;
+				}
 				expiredBubbles.push(id);
+				if (SPECIAL_TYPES.includes(bubble.type)) {
+					this.hasSpecialBubble = false;
+				}
 			}
 		}
+
 		for (const bubbleId of expiredBubbles) {
 			this.bubbles.delete(bubbleId);
 		}
@@ -102,23 +108,25 @@ export class Game {
 	}
 
 	generateBubbles() {
-		if (this.currentState !== GameState.Playing || !this.rng) return [];
-		if (this.effects[EffectType.Freeze].active) return [];
+		if (this.currentState !== GameState.Playing || !this.rng) {
+			return [];
+		}
+
+		if (this.effects[EffectType.Freeze].active) {
+			return [];
+		}
 
 		const baseSpawnRate = 3;
 		const additionalBubbles = Math.floor(this.elapsedTime / 120);
-		const bubblesToGenerate = Math.min(baseSpawnRate + additionalBubbles, MAX_BUBBLES - this.bubbles.size, 6);
+		const maxPossible = MAX_BUBBLES - this.bubbles.size;
+		const bubblesToGenerate = Math.min(baseSpawnRate + additionalBubbles, maxPossible, 6);
 
 		const newBubbles: Bubble[] = [];
 
-		const spawnSpecial = this.rng() < SPECIAL_BUBBLE_PROBABILITY;
-		let specialIndex = -1;
-		if (spawnSpecial) {
-			specialIndex = Math.floor(this.rng() * bubblesToGenerate);
-		}
-
 		for (let i = 0; i < bubblesToGenerate; i++) {
-			if (this.bubbles.size >= MAX_BUBBLES) break;
+			if (this.bubbles.size >= MAX_BUBBLES) {
+				break;
+			}
 
 			const id = crypto.randomUUID();
 			const size = Math.floor(this.rng() * 50) + 50;
@@ -128,16 +136,10 @@ export class Game {
 			const speedMultiplier = 1 + this.elapsedTime / 500;
 			const speed = (this.rng() * (MAX_SPEED - MIN_SPEED) + MIN_SPEED) * speedMultiplier;
 
-			let bubbleType = getRandomBubbleType(this.rng);
+			let bubbleType = getRandomBubbleType(this.rng, this.hasSpecialBubble);
 
-			if (i === specialIndex) {
-				const specialTypes = [BubbleType.Freeze, BubbleType.TimeBubble, BubbleType.HeartBubble];
-				const randomIndex = Math.floor(this.rng() * specialTypes.length);
-				const chosenType = specialTypes[randomIndex];
-				const specialBubble = BUBBLE_TYPES.find((b) => b.type === chosenType);
-				if (specialBubble) {
-					bubbleType = specialBubble;
-				}
+			if (bubbleType?.special) {
+				this.hasSpecialBubble = true;
 			}
 
 			const bubble: Bubble = {
@@ -165,6 +167,8 @@ export class Game {
 			const bubble = this.bubbles.get(bubbleId);
 			if (!bubble) return false;
 
+			const isSpecial = SPECIAL_TYPES.includes(bubble.type);
+
 			switch (bubble.type) {
 				case BubbleType.Freeze:
 					this.activateEffect(EffectType.Freeze, 5000);
@@ -175,7 +179,7 @@ export class Game {
 				case BubbleType.HeartBubble:
 					this.lives += HEART_BONUS;
 					break;
-				case 'Darkness':
+				case BubbleType.Darkness:
 					this.activateEffect(EffectType.Darkness, 5000);
 					break;
 				default:
@@ -184,6 +188,11 @@ export class Game {
 			}
 
 			this.bubbles.delete(bubbleId);
+
+			if (isSpecial) {
+				this.hasSpecialBubble = false;
+			}
+
 			return true;
 		}
 		return false;
