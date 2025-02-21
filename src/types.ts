@@ -42,3 +42,16 @@ export const BUBBLE_TYPES = [
 	{ type: BubbleType.TimeBubble, score: 0, probability: 3, image: 'hourglass' },
 	{ type: BubbleType.HeartBubble, score: 0, probability: 3, image: 'heart' },
 ];
+
+export interface Bubble {
+	id: string;
+	x: number;
+	y: number;
+	size: number;
+	speed: number;
+	createdAt: number;
+	score: number;
+	type: string;
+	image: string;
+	timeLivedMs: number;
+}

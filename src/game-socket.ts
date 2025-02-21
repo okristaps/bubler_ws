@@ -67,6 +67,15 @@ export function handleWebSocket(request: Request, env: Env): Response {
 	}, 200);
 
 	setInterval(() => {
+		if (game && game.currentState === GameState.Playing && !game.freezeActive) {
+			game.ellapseTime();
+			for (const bubble of game.bubbles.values()) {
+				bubble.timeLivedMs += 1000;
+			}
+		}
+	}, 1000);
+
+	setInterval(() => {
 		if (game && game.currentState === GameState.Playing) {
 			game.ellapseTime();
 		}

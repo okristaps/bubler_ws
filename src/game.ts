@@ -1,6 +1,6 @@
 import ICPClient from '../clients/icpClient';
 import { Player } from './player';
-import { BUBBLE_TYPES, BubbleType, GameState } from './types';
+import { Bubble, BUBBLE_TYPES, BubbleType, GameState } from './types';
 import { getRandomBubbleType, seededRandom } from './utils';
 
 const MAX_BUBBLES = 150;
@@ -21,10 +21,7 @@ export class Game {
 	currentState: GameState;
 	lives: number;
 	gameId?: string;
-	bubbles: Map<
-		string,
-		{ id: string; x: number; y: number; size: number; speed: number; createdAt: number; score: number; type: string; image: string }
-	>;
+	bubbles: Map<string, Bubble>;
 	totalBubblesGenerated: number = 0;
 	startTime: number | null = null;
 	elapsedTime: number = 0;
@@ -36,7 +33,7 @@ export class Game {
 	icpClient: ICPClient;
 	freezeActive: boolean = false;
 	freezeEndTime: number = 0;
-	freezeDurationMs: number = 10000;
+	freezeDurationMs: number = 5000;
 
 	constructor(player: Player, icpClient: ICPClient) {
 		this.id = crypto.randomUUID();
@@ -78,17 +75,17 @@ export class Game {
 	}
 
 	checkExpiredBubbles(server: WebSocket) {
-		if (this.currentState === GameState.Paused || this.freezeActive) {
-			return;
-		}
+		const expiredBubbles: string[] = [];
 
-		const now = Date.now();
 		for (const [id, bubble] of this.bubbles) {
-			if (now - bubble.createdAt > BUBBLE_LIFETIME_MS) {
+			if (bubble.timeLivedMs >= BUBBLE_LIFETIME_MS) {
 				this.player.score = Math.max(0, this.player.score - SCORE_DEDUCTION);
 				this.lives -= LIVES_DEDUCTION;
-				this.bubbles.delete(id);
+				expiredBubbles.push(id);
 			}
+		}
+		for (const bubbleId of expiredBubbles) {
+			this.bubbles.delete(bubbleId);
 		}
 
 		if (this.lives <= 0) {
@@ -149,6 +146,7 @@ export class Game {
 				y,
 				size,
 				speed,
+				timeLivedMs: 0,
 				createdAt: Date.now(),
 				score: bubbleType.score,
 				type: bubbleType.type,
