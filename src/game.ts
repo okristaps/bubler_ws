@@ -4,7 +4,7 @@ import { BUBBLE_TYPES, BubbleType, GameState } from './types';
 import { getRandomBubbleType, seededRandom } from './utils';
 
 const MAX_BUBBLES = 150;
-const BUBBLE_LIFETIME_MS = 10000;
+const BUBBLE_LIFETIME_MS = 8000;
 const MIN_SPEED = 3;
 const MAX_SPEED = 5;
 const SCORE_DEDUCTION = 100;
@@ -32,6 +32,7 @@ export class Game {
 	timeLimit: number = GAME_TIME_LIMIT;
 	seed: number;
 	rng?: () => number;
+	pausedAt?: number;
 	icpClient: ICPClient;
 
 	constructor(player: Player, icpClient: ICPClient) {
@@ -44,6 +45,7 @@ export class Game {
 		this.rng = undefined;
 		this.icpClient = icpClient;
 		this.gameId = undefined;
+		this.pausedAt = undefined;
 	}
 
 	async startGame() {
@@ -73,6 +75,8 @@ export class Game {
 	}
 
 	checkExpiredBubbles(server: WebSocket) {
+		if (this.currentState === GameState.Paused) return;
+
 		const now = Date.now();
 		const expiredBubbles = [];
 
@@ -93,7 +97,7 @@ export class Game {
 
 	generateBubbles() {
 		if (this.currentState !== GameState.Playing || !this.rng) return [];
-		const baseSpawnRate = 3;
+		const baseSpawnRate = 4;
 		const additionalBubbles = Math.floor(this.elapsedTime / 120);
 		const bubblesToGenerate = Math.min(baseSpawnRate + additionalBubbles, MAX_BUBBLES - this.bubbles.size, 6);
 
@@ -110,7 +114,6 @@ export class Game {
 			const speed = (this.rng() * (MAX_SPEED - MIN_SPEED) + MIN_SPEED) * speedMultiplier;
 
 			let bubbleType = getRandomBubbleType(this.rng);
-
 			if (this.rng() < SPECIAL_BUBBLE_PROBABILITY) {
 				bubbleType =
 					this.rng() < 0.5
@@ -135,12 +138,11 @@ export class Game {
 				this.totalBubblesGenerated++;
 			}
 		}
-
 		return newBubbles;
 	}
 
 	popBubble(bubbleId: string): boolean {
-		if (this.bubbles.has(bubbleId)) {
+		if (this.bubbles.has(bubbleId) && this.currentState === GameState.Playing) {
 			const bubble = this.bubbles.get(bubbleId);
 			if (!bubble) return false;
 			if (bubble.type === 'Time Bubble') {
@@ -169,20 +171,23 @@ export class Game {
 	pauseGame() {
 		if (this.currentState === GameState.Playing) {
 			this.currentState = GameState.Paused;
-			this.elapsedTime += Date.now() - (this.startTime ?? 0);
-			this.startTime = null;
+			this.pausedAt = Date.now();
 		}
 	}
-
 	resumeGame() {
 		if (this.currentState === GameState.Paused) {
+			const pausedDuration = Date.now() - (this.pausedAt ?? Date.now());
+			for (const bubble of this.bubbles.values()) {
+				bubble.createdAt += pausedDuration;
+			}
 			this.currentState = GameState.Playing;
-			this.startTime = Date.now();
 		}
 	}
 
 	ellapseTime() {
-		this.elapsedTime += 1;
+		if (this.currentState !== GameState.Playing) {
+			this.elapsedTime += 1;
+		}
 		if (this.elapsedTime >= this.timeLimit) {
 			this.endGame();
 		}

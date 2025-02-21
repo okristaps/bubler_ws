@@ -96,6 +96,16 @@ export function handleWebSocket(request: Request, env: Env): Response {
 			if (data.type === 'pop' && game) {
 				game.popBubble(data.bubbleId);
 			}
+
+			if (data.type === 'pause' && game) {
+				game.pauseGame();
+				server.send(JSON.stringify({ type: 'game-paused' }));
+			}
+
+			if (data.type === 'resume' && game) {
+				game.resumeGame();
+				server.send(JSON.stringify({ type: 'game-resumed' }));
+			}
 		} catch (error) {
 			console.error('❌ Invalid message received:', event.data);
 		}
