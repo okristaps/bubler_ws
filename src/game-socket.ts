@@ -3,7 +3,7 @@ import { Env } from './index';
 import { Player } from './player';
 import ICPClient from '../clients/icpClient';
 import { formatTime } from './utils';
-import { GameState } from './types';
+import { GameState, EffectType } from './types';
 const BUBBLE_CYCLE_INTERVAL = 1000;
 
 export function handleWebSocket(request: Request, env: Env): Response {
@@ -18,6 +18,7 @@ export function handleWebSocket(request: Request, env: Env): Response {
 	let game: Game | null = null;
 	let currentPlayerSocket: WebSocket | null = server;
 	let gameOverSent = false;
+
 	function sendBubbles() {
 		if (game && game.currentState === GameState.Playing && currentPlayerSocket) {
 			game.generateBubbles();
@@ -26,9 +27,19 @@ export function handleWebSocket(request: Request, env: Env): Response {
 
 	const gameInterval = setInterval(() => {
 		if (game) {
-			if (game.freezeActive && Date.now() >= game.freezeEndTime) {
-				game.freezeActive = false;
+			const now = Date.now();
+
+			const freezeEffect = game.effects[EffectType.Freeze];
+
+			if (freezeEffect.active && now >= freezeEffect.endTime) {
+				freezeEffect.active = false;
 				server.send(JSON.stringify({ type: 'freeze-ended' }));
+			}
+
+			const darknessEffect = game.effects[EffectType.Darkness];
+			if (darknessEffect.active && now >= darknessEffect.endTime) {
+				darknessEffect.active = false;
+				server.send(JSON.stringify({ type: 'darkness-ended' }));
 			}
 
 			if (game.currentState === GameState.Playing) {
@@ -66,18 +77,12 @@ export function handleWebSocket(request: Request, env: Env): Response {
 		}
 	}, 200);
 
-	setInterval(() => {
-		if (game && game.currentState === GameState.Playing && !game.freezeActive) {
+	const timeInterval = setInterval(() => {
+		if (game && game.currentState === GameState.Playing && !game.effects[EffectType.Freeze].active) {
 			game.ellapseTime();
 			for (const bubble of game.bubbles.values()) {
 				bubble.timeLivedMs += 1000;
 			}
-		}
-	}, 1000);
-
-	setInterval(() => {
-		if (game && game.currentState === GameState.Playing) {
-			game.ellapseTime();
 		}
 	}, 1000);
 
@@ -110,12 +115,11 @@ export function handleWebSocket(request: Request, env: Env): Response {
 			if (data.type === 'pop' && game) {
 				const popped = game.popBubble(data.bubbleId);
 				if (popped) {
-					if (game.freezeActive) {
+					if (game.effects[EffectType.Freeze].active) {
 						server.send(JSON.stringify({ type: 'freeze-active' }));
 					}
-
-					if (!game.freezeActive) {
-						server.send(JSON.stringify({ type: 'freeze-ended' }));
+					if (game.effects[EffectType.Darkness].active) {
+						server.send(JSON.stringify({ type: 'darkness-active' }));
 					}
 				}
 			}
@@ -136,6 +140,8 @@ export function handleWebSocket(request: Request, env: Env): Response {
 
 	server.addEventListener('close', () => {
 		clearInterval(bubbleInterval);
+		clearInterval(gameInterval);
+		clearInterval(timeInterval);
 		game = null;
 		currentPlayerSocket = null;
 	});

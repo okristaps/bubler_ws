@@ -21,6 +21,7 @@ export enum BubbleType {
 	TimeBubble = 'Time',
 	HeartBubble = 'Heart',
 	Freeze = 'Freeze',
+	Darkness = 'Darkness',
 }
 
 export const BUBBLE_TYPES = [
@@ -41,6 +42,7 @@ export const BUBBLE_TYPES = [
 	{ type: BubbleType.Freeze, score: 0, probability: 3, image: 'snowflake' },
 	{ type: BubbleType.TimeBubble, score: 0, probability: 3, image: 'hourglass' },
 	{ type: BubbleType.HeartBubble, score: 0, probability: 3, image: 'heart' },
+	{ type: BubbleType.Darkness, score: 0, probability: 3, image: 'darkness' },
 ];
 
 export interface Bubble {
@@ -54,4 +56,15 @@ export interface Bubble {
 	type: string;
 	image: string;
 	timeLivedMs: number;
+}
+
+export enum EffectType {
+	Freeze = 'freeze',
+	Darkness = 'darkness',
+}
+
+export interface GameEffect {
+	active: boolean;
+	endTime: number;
+	durationMs: number;
 }

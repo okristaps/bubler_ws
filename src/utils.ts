@@ -1,4 +1,4 @@
-import { BUBBLE_TYPES } from './types';
+import { BUBBLE_TYPES, EffectType, GameEffect } from './types';
 
 export const formatTime = (timeInSeconds: number) => {
 	const minutes = Math.floor(timeInSeconds / 60);
@@ -28,4 +28,11 @@ export function getRandomBubbleType(rng: () => number) {
 	}
 
 	return BUBBLE_TYPES[BUBBLE_TYPES.length - 1];
+}
+
+export function createDefaultEffects(): Record<EffectType, GameEffect> {
+	return {
+		[EffectType.Freeze]: { active: false, endTime: 0, durationMs: 5000 },
+		[EffectType.Darkness]: { active: false, endTime: 0, durationMs: 5000 },
+	};
 }

@@ -1,7 +1,7 @@
 import ICPClient from '../clients/icpClient';
 import { Player } from './player';
-import { Bubble, BUBBLE_TYPES, BubbleType, GameState } from './types';
-import { getRandomBubbleType, seededRandom } from './utils';
+import { Bubble, BUBBLE_TYPES, BubbleType, EffectType, GameEffect, GameState } from './types';
+import { createDefaultEffects, getRandomBubbleType, seededRandom } from './utils';
 
 const MAX_BUBBLES = 150;
 const BUBBLE_LIFETIME_MS = 8000;
@@ -25,15 +25,12 @@ export class Game {
 	totalBubblesGenerated: number = 0;
 	startTime: number | null = null;
 	elapsedTime: number = 0;
-	lastImpossibleBubbleSpawn: number = 0;
 	timeLimit: number = GAME_TIME_LIMIT;
 	seed: number;
 	rng?: () => number;
 	pausedAt?: number;
 	icpClient: ICPClient;
-	freezeActive: boolean = false;
-	freezeEndTime: number = 0;
-	freezeDurationMs: number = 5000;
+	effects: Record<EffectType, GameEffect>;
 
 	constructor(player: Player, icpClient: ICPClient) {
 		this.id = crypto.randomUUID();
@@ -46,16 +43,17 @@ export class Game {
 		this.icpClient = icpClient;
 		this.gameId = undefined;
 		this.pausedAt = undefined;
+		this.effects = createDefaultEffects();
 	}
 
 	async startGame() {
 		this.startTime = Date.now();
-		this.lastImpossibleBubbleSpawn = this.startTime;
 		await this.icpClient.savePlayer(this.player.wallet, this.player.username);
+
 		const game = await this.icpClient.startGame(this.player.wallet);
 		if (game?.gameId && game?.seed) {
-			this.gameId = game?.gameId;
-			this.seed = game?.seed;
+			this.gameId = game.gameId;
+			this.seed = game.seed;
 			this.rng = seededRandom(this.seed);
 			this.currentState = GameState.Playing;
 		} else {
@@ -71,7 +69,11 @@ export class Game {
 		this.currentState = GameState.Lobby;
 		this.startTime = null;
 		this.elapsedTime = 0;
-		this.lastImpossibleBubbleSpawn = 0;
+
+		for (const key of Object.keys(this.effects) as EffectType[]) {
+			this.effects[key].active = false;
+			this.effects[key].endTime = 0;
+		}
 	}
 
 	checkExpiredBubbles(server: WebSocket) {
@@ -101,16 +103,15 @@ export class Game {
 
 	generateBubbles() {
 		if (this.currentState !== GameState.Playing || !this.rng) return [];
-		if (this.freezeActive) return [];
+		if (this.effects[EffectType.Freeze].active) return [];
 
 		const baseSpawnRate = 3;
 		const additionalBubbles = Math.floor(this.elapsedTime / 120);
 		const bubblesToGenerate = Math.min(baseSpawnRate + additionalBubbles, MAX_BUBBLES - this.bubbles.size, 6);
 
-		const newBubbles = [];
+		const newBubbles: Bubble[] = [];
 
 		const spawnSpecial = this.rng() < SPECIAL_BUBBLE_PROBABILITY;
-
 		let specialIndex = -1;
 		if (spawnSpecial) {
 			specialIndex = Math.floor(this.rng() * bubblesToGenerate);
@@ -133,14 +134,13 @@ export class Game {
 				const specialTypes = [BubbleType.Freeze, BubbleType.TimeBubble, BubbleType.HeartBubble];
 				const randomIndex = Math.floor(this.rng() * specialTypes.length);
 				const chosenType = specialTypes[randomIndex];
-
 				const specialBubble = BUBBLE_TYPES.find((b) => b.type === chosenType);
 				if (specialBubble) {
 					bubbleType = specialBubble;
 				}
 			}
 
-			const bubble = {
+			const bubble: Bubble = {
 				id,
 				x,
 				y,
@@ -165,26 +165,36 @@ export class Game {
 			const bubble = this.bubbles.get(bubbleId);
 			if (!bubble) return false;
 
-			if (bubble.type === BubbleType.Freeze) {
-				this.freezeActive = true;
-				this.freezeEndTime = Date.now() + this.freezeDurationMs;
-			} else if (bubble.type === BubbleType.TimeBubble) {
-				this.timeLimit += TIME_BONUS;
-			} else if (bubble.type === BubbleType.HeartBubble) {
-				this.lives += HEART_BONUS;
-			} else {
-				this.player.increaseScore(bubble.score ?? 0);
+			switch (bubble.type) {
+				case BubbleType.Freeze:
+					this.activateEffect(EffectType.Freeze, 5000);
+					break;
+				case BubbleType.TimeBubble:
+					this.timeLimit += TIME_BONUS;
+					break;
+				case BubbleType.HeartBubble:
+					this.lives += HEART_BONUS;
+					break;
+				case 'Darkness':
+					this.activateEffect(EffectType.Darkness, 5000);
+					break;
+				default:
+					this.player.increaseScore(bubble.score ?? 0);
+					break;
 			}
 
 			this.bubbles.delete(bubbleId);
-
-			if (this.freezeActive && this.bubbles.size === 0) {
-				this.freezeActive = false;
-			}
-
 			return true;
 		}
 		return false;
+	}
+
+	activateEffect(effectType: EffectType, durationMs: number) {
+		const effect = this.effects[effectType];
+		const now = Date.now();
+		effect.active = true;
+		effect.durationMs = durationMs;
+		effect.endTime = now + durationMs;
 	}
 
 	getAllBubbles() {
@@ -202,6 +212,7 @@ export class Game {
 			this.pausedAt = Date.now();
 		}
 	}
+
 	resumeGame() {
 		if (this.currentState === GameState.Paused) {
 			const pausedDuration = Date.now() - (this.pausedAt ?? Date.now());
