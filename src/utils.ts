@@ -15,15 +15,17 @@ export function seededRandom(seed: number) {
 }
 
 export function getRandomBubbleType(rng: () => number) {
-	const rand = rng() * 100;
-	let cumulativeProbability = 0;
+	const totalProbability = BUBBLE_TYPES.reduce((sum, bubble) => sum + bubble.probability, 0);
+	const roll = rng() * totalProbability;
 
-	for (const bubbleType of BUBBLE_TYPES) {
-		cumulativeProbability += bubbleType.probability;
-		if (rand <= cumulativeProbability) {
-			return bubbleType;
+	// find which bubble corresponds to this roll
+	let cumulative = 0;
+	for (const bubble of BUBBLE_TYPES) {
+		cumulative += bubble.probability;
+		if (roll < cumulative) {
+			return bubble;
 		}
 	}
 
-	return BUBBLE_TYPES[0];
+	return BUBBLE_TYPES[BUBBLE_TYPES.length - 1];
 }

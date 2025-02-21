@@ -13,7 +13,7 @@ const GAME_TIME_LIMIT = 300;
 const MAX_LIVES = 5;
 const TIME_BONUS = 10;
 const HEART_BONUS = 1;
-const SPECIAL_BUBBLE_PROBABILITY = 0.1;
+const SPECIAL_BUBBLE_PROBABILITY = 0.01;
 
 export class Game {
 	id: string;
@@ -78,7 +78,9 @@ export class Game {
 	}
 
 	checkExpiredBubbles(server: WebSocket) {
-		if (this.currentState === GameState.Paused || this.freezeActive) return;
+		if (this.currentState === GameState.Paused || this.freezeActive) {
+			return;
+		}
 
 		const now = Date.now();
 		for (const [id, bubble] of this.bubbles) {
@@ -88,6 +90,7 @@ export class Game {
 				this.bubbles.delete(id);
 			}
 		}
+
 		if (this.lives <= 0) {
 			this.endGame();
 			server.send(
@@ -102,47 +105,60 @@ export class Game {
 	generateBubbles() {
 		if (this.currentState !== GameState.Playing || !this.rng) return [];
 		if (this.freezeActive) return [];
+
 		const baseSpawnRate = 3;
 		const additionalBubbles = Math.floor(this.elapsedTime / 120);
 		const bubblesToGenerate = Math.min(baseSpawnRate + additionalBubbles, MAX_BUBBLES - this.bubbles.size, 6);
 
 		const newBubbles = [];
 
+		const spawnSpecial = this.rng() < SPECIAL_BUBBLE_PROBABILITY;
+
+		let specialIndex = -1;
+		if (spawnSpecial) {
+			specialIndex = Math.floor(this.rng() * bubblesToGenerate);
+		}
+
 		for (let i = 0; i < bubblesToGenerate; i++) {
 			if (this.bubbles.size >= MAX_BUBBLES) break;
 
 			const id = crypto.randomUUID();
-			const size = Math.floor(this?.rng() * 50) + 50;
-			const x = this?.rng() * 75;
+			const size = Math.floor(this.rng() * 50) + 50;
+			const x = this.rng() * 75;
 			const y = 0;
+
 			const speedMultiplier = 1 + this.elapsedTime / 500;
 			const speed = (this.rng() * (MAX_SPEED - MIN_SPEED) + MIN_SPEED) * speedMultiplier;
 
 			let bubbleType = getRandomBubbleType(this.rng);
-			if (this.rng() < SPECIAL_BUBBLE_PROBABILITY) {
-				bubbleType =
-					this.rng() < 0.5
-						? BUBBLE_TYPES.find((b) => b.type === BubbleType.TimeBubble) ?? bubbleType
-						: BUBBLE_TYPES.find((b) => b.type === BubbleType.HeartBubble) ?? bubbleType;
+
+			if (i === specialIndex) {
+				const specialTypes = [BubbleType.Freeze, BubbleType.TimeBubble, BubbleType.HeartBubble];
+				const randomIndex = Math.floor(this.rng() * specialTypes.length);
+				const chosenType = specialTypes[randomIndex];
+
+				const specialBubble = BUBBLE_TYPES.find((b) => b.type === chosenType);
+				if (specialBubble) {
+					bubbleType = specialBubble;
+				}
 			}
 
-			if (!this.bubbles.has(id)) {
-				const bubble = {
-					id,
-					x,
-					y,
-					size,
-					speed,
-					createdAt: Date.now(),
-					score: bubbleType.score,
-					type: bubbleType.type,
-					image: bubbleType.image,
-				};
-				this.bubbles.set(id, bubble);
-				newBubbles.push(bubble);
-				this.totalBubblesGenerated++;
-			}
+			const bubble = {
+				id,
+				x,
+				y,
+				size,
+				speed,
+				createdAt: Date.now(),
+				score: bubbleType.score,
+				type: bubbleType.type,
+				image: bubbleType.image,
+			};
+
+			this.bubbles.set(id, bubble);
+			newBubbles.push(bubble);
 		}
+
 		return newBubbles;
 	}
 
@@ -157,10 +173,11 @@ export class Game {
 			} else if (bubble.type === BubbleType.TimeBubble) {
 				this.timeLimit += TIME_BONUS;
 			} else if (bubble.type === BubbleType.HeartBubble) {
-				this.lives = Math.min(this.lives + HEART_BONUS, MAX_LIVES);
+				this.lives += HEART_BONUS;
 			} else {
 				this.player.increaseScore(bubble.score ?? 0);
 			}
+
 			this.bubbles.delete(bubbleId);
 
 			if (this.freezeActive && this.bubbles.size === 0) {
