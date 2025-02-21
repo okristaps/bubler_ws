@@ -185,7 +185,7 @@ export class Game {
 	}
 
 	ellapseTime() {
-		if (this.currentState !== GameState.Playing) {
+		if (this.currentState === GameState.Playing) {
 			this.elapsedTime += 1;
 		}
 		if (this.elapsedTime >= this.timeLimit) {
