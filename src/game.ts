@@ -34,6 +34,9 @@ export class Game {
 	rng?: () => number;
 	pausedAt?: number;
 	icpClient: ICPClient;
+	freezeActive: boolean = false;
+	freezeEndTime: number = 0;
+	freezeDurationMs: number = 10000;
 
 	constructor(player: Player, icpClient: ICPClient) {
 		this.id = crypto.randomUUID();
@@ -75,29 +78,31 @@ export class Game {
 	}
 
 	checkExpiredBubbles(server: WebSocket) {
-		if (this.currentState === GameState.Paused) return;
+		if (this.currentState === GameState.Paused || this.freezeActive) return;
 
 		const now = Date.now();
-		const expiredBubbles = [];
-
 		for (const [id, bubble] of this.bubbles) {
 			if (now - bubble.createdAt > BUBBLE_LIFETIME_MS) {
 				this.player.score = Math.max(0, this.player.score - SCORE_DEDUCTION);
 				this.lives -= LIVES_DEDUCTION;
-				expiredBubbles.push(id);
 				this.bubbles.delete(id);
 			}
 		}
-
 		if (this.lives <= 0) {
 			this.endGame();
-			server.send(JSON.stringify({ type: 'game-over', message: 'Game Over! You ran out of lives.' }));
+			server.send(
+				JSON.stringify({
+					type: 'game-over',
+					message: 'Game Over! You ran out of lives.',
+				})
+			);
 		}
 	}
 
 	generateBubbles() {
 		if (this.currentState !== GameState.Playing || !this.rng) return [];
-		const baseSpawnRate = 4;
+		if (this.freezeActive) return [];
+		const baseSpawnRate = 3;
 		const additionalBubbles = Math.floor(this.elapsedTime / 120);
 		const bubblesToGenerate = Math.min(baseSpawnRate + additionalBubbles, MAX_BUBBLES - this.bubbles.size, 6);
 
@@ -145,15 +150,23 @@ export class Game {
 		if (this.bubbles.has(bubbleId) && this.currentState === GameState.Playing) {
 			const bubble = this.bubbles.get(bubbleId);
 			if (!bubble) return false;
-			if (bubble.type === 'Time Bubble') {
+
+			if (bubble.type === BubbleType.Freeze) {
+				this.freezeActive = true;
+				this.freezeEndTime = Date.now() + this.freezeDurationMs;
+			} else if (bubble.type === BubbleType.TimeBubble) {
 				this.timeLimit += TIME_BONUS;
-			} else if (bubble.type === 'Heart Bubble') {
-				this.lives = this.lives + HEART_BONUS;
+			} else if (bubble.type === BubbleType.HeartBubble) {
+				this.lives = Math.min(this.lives + HEART_BONUS, MAX_LIVES);
 			} else {
-				this.player.increaseScore(bubble?.score ?? 0);
+				this.player.increaseScore(bubble.score ?? 0);
+			}
+			this.bubbles.delete(bubbleId);
+
+			if (this.freezeActive && this.bubbles.size === 0) {
+				this.freezeActive = false;
 			}
 
-			this.bubbles.delete(bubbleId);
 			return true;
 		}
 		return false;

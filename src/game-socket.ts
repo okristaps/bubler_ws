@@ -26,6 +26,11 @@ export function handleWebSocket(request: Request, env: Env): Response {
 
 	const gameInterval = setInterval(() => {
 		if (game) {
+			if (game.freezeActive && Date.now() >= game.freezeEndTime) {
+				game.freezeActive = false;
+				server.send(JSON.stringify({ type: 'freeze-ended' }));
+			}
+
 			if (game.currentState === GameState.Playing) {
 				game.checkExpiredBubbles(server);
 
@@ -94,7 +99,16 @@ export function handleWebSocket(request: Request, env: Env): Response {
 			}
 
 			if (data.type === 'pop' && game) {
-				game.popBubble(data.bubbleId);
+				const popped = game.popBubble(data.bubbleId);
+				if (popped) {
+					if (game.freezeActive) {
+						server.send(JSON.stringify({ type: 'freeze-active' }));
+					}
+
+					if (!game.freezeActive) {
+						server.send(JSON.stringify({ type: 'freeze-ended' }));
+					}
+				}
 			}
 
 			if (data.type === 'pause' && game) {

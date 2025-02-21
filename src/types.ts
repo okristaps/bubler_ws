@@ -18,8 +18,9 @@ export enum BubbleType {
 	Godlike = 'Godlike',
 	Impossible = 'Impossible',
 	Rare = 'Rare',
-	TimeBubble = 'Time Bubble',
-	HeartBubble = 'Heart Bubble',
+	TimeBubble = 'Time',
+	HeartBubble = 'Heart',
+	Freeze = 'Freeze',
 }
 
 export const BUBBLE_TYPES = [
@@ -37,6 +38,7 @@ export const BUBBLE_TYPES = [
 	{ type: BubbleType.Rare, score: 400, probability: 8, image: '12' },
 	{ type: BubbleType.Rare, score: 400, probability: 8, image: '14' },
 	{ type: BubbleType.Rare, score: 400, probability: 8, image: '15' },
-	{ type: BubbleType.TimeBubble, score: 0, probability: 1, image: 'time' },
-	{ type: BubbleType.HeartBubble, score: 0, probability: 1, image: 'heart' },
+	{ type: BubbleType.Freeze, score: 0, probability: 3, image: 'snowflake' },
+	{ type: BubbleType.TimeBubble, score: 0, probability: 3, image: 'hourglass' },
+	{ type: BubbleType.HeartBubble, score: 0, probability: 3, image: 'heart' },
 ];
