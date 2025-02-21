@@ -15,16 +15,11 @@ export function seededRandom(seed: number) {
 }
 
 export function getRandomBubbleType(rng: () => number, hasSpecialBubble: boolean) {
-	// 1) Filter out special bubbles if we already have one on the board
 	const allowedBubbles = hasSpecialBubble ? BUBBLE_TYPES.filter((b) => !b.special) : BUBBLE_TYPES;
-
-	// 2) Calculate total probability of allowed bubbles
 	const totalProbability = allowedBubbles.reduce((sum, bubble) => sum + bubble.probability, 0);
 
-	// 3) Roll a random value between [0, totalProbability)
 	const roll = rng() * totalProbability;
 
-	// 4) Iterate through allowed bubbles to find the chosen one
 	let cumulative = 0;
 	for (const bubble of allowedBubbles) {
 		cumulative += bubble.probability;
@@ -33,13 +28,20 @@ export function getRandomBubbleType(rng: () => number, hasSpecialBubble: boolean
 		}
 	}
 
-	// Fallback: return the last allowed bubble if we never hit the threshold
 	return allowedBubbles[allowedBubbles.length - 1];
 }
 
 export function createDefaultEffects(): Record<EffectType, GameEffect> {
 	return {
-		[EffectType.Freeze]: { active: false, endTime: 0, durationMs: 5000 },
-		[EffectType.Darkness]: { active: false, endTime: 0, durationMs: 5000 },
+		[EffectType.Freeze]: {
+			active: false,
+			endTime: 0,
+			durationMs: 5000,
+		},
+		[EffectType.Darkness]: {
+			active: false,
+			endTime: 0,
+			durationMs: 5000,
+		},
 	};
 }

@@ -42,7 +42,7 @@ export const BUBBLE_TYPES = [
 	{ type: BubbleType.Freeze, score: 0, probability: 3, image: 'snowflake', special: true },
 	{ type: BubbleType.TimeBubble, score: 0, probability: 3, image: 'hourglass', special: true },
 	{ type: BubbleType.HeartBubble, score: 0, probability: 3, image: 'heart', special: true },
-	{ type: BubbleType.Darkness, score: 0, probability: 3, image: 'darkness', special: true },
+	{ type: BubbleType.Darkness, score: 0, probability: 15, image: 'darkness', special: true },
 ];
 
 export interface Bubble {
@@ -59,8 +59,8 @@ export interface Bubble {
 }
 
 export enum EffectType {
-	Freeze = 'freeze',
-	Darkness = 'darkness',
+	Freeze = 'Freeze',
+	Darkness = 'Darkness',
 }
 
 export interface GameEffect {

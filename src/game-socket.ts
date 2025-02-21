@@ -40,13 +40,13 @@ export function handleWebSocket(request: Request, env: Env): Response {
 
 		const now = Date.now();
 
-		const freezeEffect = game.effects.freeze;
+		const freezeEffect = game.effects.Freeze;
 		if (freezeEffect.active && now >= freezeEffect.endTime) {
 			freezeEffect.active = false;
 			server.send(JSON.stringify({ type: ServerEvent.FreezeEnded }));
 		}
 
-		const darknessEffect = game.effects.darkness;
+		const darknessEffect = game.effects.Darkness;
 		if (darknessEffect.active && now >= darknessEffect.endTime) {
 			darknessEffect.active = false;
 			server.send(JSON.stringify({ type: ServerEvent.DarknessEnded }));
@@ -86,7 +86,7 @@ export function handleWebSocket(request: Request, env: Env): Response {
 
 	function onTimeInterval() {
 		if (!game) return;
-		if (game.currentState === GameState.Playing && !game.effects.freeze.active) {
+		if (game.currentState === GameState.Playing && !game.effects.Freeze.active) {
 			game.ellapseTime();
 			for (const bubble of game.bubbles.values()) {
 				bubble.timeLivedMs += 1000;
@@ -110,10 +110,10 @@ export function handleWebSocket(request: Request, env: Env): Response {
 			case ClientEvent.Pop: {
 				const popped = game.popBubble(data.bubbleId);
 				if (popped) {
-					if (game.effects.freeze.active) {
+					if (game.effects.Freeze.active) {
 						server.send(JSON.stringify({ type: ServerEvent.FreezeActive }));
 					}
-					if (game.effects.darkness.active) {
+					if (game.effects.Darkness.active) {
 						server.send(JSON.stringify({ type: ServerEvent.DarknessActive }));
 					}
 				}
