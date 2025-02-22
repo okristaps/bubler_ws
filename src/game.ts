@@ -182,6 +182,9 @@ export class Game {
 				case BubbleType.Darkness:
 					this.activateEffect(EffectType.Darkness, 500);
 					break;
+				case BubbleType.Mystery:
+					this.applyMysteryEffect();
+					break;
 				default:
 					this.player.increaseScore(bubble.score ?? 0);
 					break;
@@ -238,6 +241,23 @@ export class Game {
 		}
 		if (this.elapsedTime >= this.timeLimit) {
 			this.endGame();
+		}
+	}
+
+	applyMysteryEffect() {
+		const r = Math.random();
+		if (r < 0.325) {
+			this.player.score *= 2;
+		} else if (r < 0.65) {
+			this.lives += 10;
+		} else if (r < 0.7375) {
+			this.player.score = Math.floor(this.player.score / 2);
+		} else if (r < 0.825) {
+			this.activateEffect(EffectType.Darkness, 2000);
+		} else if (r < 0.9125) {
+			this.activateEffect(EffectType.Freeze, 3000);
+		} else {
+			this.lives = Math.max(0, this.lives - 5);
 		}
 	}
 }

@@ -7,7 +7,7 @@ import { GameState } from './types';
 import { ClientEvent, ServerEvent, ClientMessage } from './socket-types';
 
 const BUBBLE_CYCLE_INTERVAL = 1000;
-const GAME_UPDATE_INTERVAL = 200;
+const GAME_UPDATE_INTERVAL = 10;
 const TIME_INTERVAL = 1000;
 
 export function handleWebSocket(request: Request, env: Env): Response {

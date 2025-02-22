@@ -22,6 +22,7 @@ export enum BubbleType {
 	HeartBubble = 'Heart',
 	Freeze = 'Freeze',
 	Darkness = 'Darkness',
+	Mystery = 'Mystery',
 }
 
 export const BUBBLE_TYPES = [
@@ -43,6 +44,7 @@ export const BUBBLE_TYPES = [
 	{ type: BubbleType.TimeBubble, score: 0, probability: 1, image: 'hourglass', special: true },
 	{ type: BubbleType.HeartBubble, score: 0, probability: 3, image: 'heart', special: true },
 	{ type: BubbleType.Darkness, score: 0, probability: 4, image: 'darkness', special: true },
+	{ type: BubbleType.Mystery, score: 0, probability: 2, image: 'mystery', special: true },
 ];
 
 export interface Bubble {
