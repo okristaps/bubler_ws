@@ -36,12 +36,12 @@ export function createDefaultEffects(): Record<EffectType, GameEffect> {
 		[EffectType.Freeze]: {
 			active: false,
 			endTime: 0,
-			durationMs: 5000,
+			durationMs: 1500,
 		},
 		[EffectType.Darkness]: {
 			active: false,
 			endTime: 0,
-			durationMs: 5000,
+			durationMs: 500,
 		},
 	};
 }

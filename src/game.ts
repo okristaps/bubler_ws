@@ -171,7 +171,7 @@ export class Game {
 
 			switch (bubble.type) {
 				case BubbleType.Freeze:
-					this.activateEffect(EffectType.Freeze, 5000);
+					this.activateEffect(EffectType.Freeze, 1500);
 					break;
 				case BubbleType.TimeBubble:
 					this.timeLimit += TIME_BONUS;
@@ -180,7 +180,7 @@ export class Game {
 					this.lives += HEART_BONUS;
 					break;
 				case BubbleType.Darkness:
-					this.activateEffect(EffectType.Darkness, 5000);
+					this.activateEffect(EffectType.Darkness, 500);
 					break;
 				default:
 					this.player.increaseScore(bubble.score ?? 0);
