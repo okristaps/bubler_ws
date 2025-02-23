@@ -10,7 +10,7 @@ const MAX_SPEED = 5;
 const SCORE_DEDUCTION = 100;
 const LIVES_DEDUCTION = 1;
 const GAME_TIME_LIMIT = 300;
-const MAX_LIVES = 5;
+const MAX_LIVES = 10;
 const TIME_BONUS = 10;
 const HEART_BONUS = 1;
 
@@ -136,6 +136,7 @@ export class Game {
 			const speedMultiplier = 1 + this.elapsedTime / 500;
 			const speed = (this.rng() * (MAX_SPEED - MIN_SPEED) + MIN_SPEED) * speedMultiplier;
 
+			console.log('this.hasSpecialBubble', this.hasSpecialBubble);
 			let bubbleType = getRandomBubbleType(this.rng, this.hasSpecialBubble);
 
 			if (bubbleType?.special) {
@@ -167,34 +168,34 @@ export class Game {
 			const bubble = this.bubbles.get(bubbleId);
 			if (!bubble) return false;
 
-			const isSpecial = SPECIAL_TYPES.includes(bubble.type);
-
 			switch (bubble.type) {
 				case BubbleType.Freeze:
-					this.activateEffect(EffectType.Freeze, 1500);
+					this.activateEffect(EffectType.Freeze, 4000);
+					this.hasSpecialBubble = false;
 					break;
 				case BubbleType.TimeBubble:
 					this.timeLimit += TIME_BONUS;
+					this.hasSpecialBubble = false;
 					break;
 				case BubbleType.HeartBubble:
 					this.lives += HEART_BONUS;
+					this.hasSpecialBubble = false;
 					break;
 				case BubbleType.Darkness:
-					this.activateEffect(EffectType.Darkness, 500);
+					this.activateEffect(EffectType.Darkness, 1500);
+					this.hasSpecialBubble = false;
 					break;
 				case BubbleType.Mystery:
 					this.applyMysteryEffect();
+					this.hasSpecialBubble = false;
 					break;
 				default:
 					this.player.increaseScore(bubble.score ?? 0);
+
 					break;
 			}
 
 			this.bubbles.delete(bubbleId);
-
-			if (isSpecial) {
-				this.hasSpecialBubble = false;
-			}
 
 			return true;
 		}
@@ -253,9 +254,9 @@ export class Game {
 		} else if (r < 0.7375) {
 			this.player.score = Math.floor(this.player.score / 2);
 		} else if (r < 0.825) {
-			this.activateEffect(EffectType.Darkness, 2000);
+			this.activateEffect(EffectType.Darkness, 4000);
 		} else if (r < 0.9125) {
-			this.activateEffect(EffectType.Freeze, 3000);
+			this.activateEffect(EffectType.Freeze, 2000);
 		} else {
 			this.lives = Math.max(0, this.lives - 5);
 		}

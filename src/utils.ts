@@ -16,18 +16,17 @@ export function seededRandom(seed: number) {
 
 export function getRandomBubbleType(rng: () => number, hasSpecialBubble: boolean) {
 	const allowedBubbles = hasSpecialBubble ? BUBBLE_TYPES.filter((b) => !b.special) : BUBBLE_TYPES;
+
 	const totalProbability = allowedBubbles.reduce((sum, bubble) => sum + bubble.probability, 0);
-
 	const roll = rng() * totalProbability;
-
 	let cumulative = 0;
+
 	for (const bubble of allowedBubbles) {
 		cumulative += bubble.probability;
 		if (roll < cumulative) {
 			return bubble;
 		}
 	}
-
 	return allowedBubbles[allowedBubbles.length - 1];
 }
 
@@ -36,7 +35,7 @@ export function createDefaultEffects(): Record<EffectType, GameEffect> {
 		[EffectType.Freeze]: {
 			active: false,
 			endTime: 0,
-			durationMs: 1500,
+			durationMs: 4000,
 		},
 		[EffectType.Darkness]: {
 			active: false,
