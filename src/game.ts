@@ -49,13 +49,14 @@ export class Game {
 	async startGame() {
 		this.startTime = Date.now();
 		await this.icpClient.savePlayer(this.player.wallet, this.player.username);
-
+		console.log('Player joined: ', this.player.username);
 		const game = await this.icpClient.startGame(this.player.wallet);
 		if (game?.gameId && game?.seed) {
 			this.gameId = game.gameId;
 			this.seed = game.seed;
 			this.rng = seededRandom(this.seed);
 			this.currentState = GameState.Playing;
+			console.log('Player started playing: ', this.player.username);
 		} else {
 			this.currentState = GameState.Error;
 		}
@@ -136,7 +137,6 @@ export class Game {
 			const speedMultiplier = 1 + this.elapsedTime / 500;
 			const speed = (this.rng() * (MAX_SPEED - MIN_SPEED) + MIN_SPEED) * speedMultiplier;
 
-			console.log('this.hasSpecialBubble', this.hasSpecialBubble);
 			let bubbleType = getRandomBubbleType(this.rng, this.hasSpecialBubble);
 
 			if (bubbleType?.special) {
@@ -216,6 +216,7 @@ export class Game {
 
 	async endGame() {
 		this.currentState = GameState.Finished;
+		console.log('Player stoped playing: ', this.player.username, this.player.score, this.elapsedTime);
 		await this.icpClient.finishGame(this.gameId ?? '', this.player.score, this.elapsedTime);
 	}
 
