@@ -43,6 +43,7 @@ export const BUBBLE_TYPES = [
 	{ type: BubbleType.Rare, score: 400, probability: 8, image: '16' },
 	{ type: BubbleType.Rare, score: 400, probability: 8, image: '17' },
 	{ type: BubbleType.Rare, score: 400, probability: 8, image: '18' },
+	{ type: BubbleType.Rare, score: 400, probability: 8, image: '19' },
 	{ type: BubbleType.Freeze, score: 0, probability: 5, image: 'snowflake', special: true },
 	{ type: BubbleType.TimeBubble, score: 0, probability: 2, image: 'hourglass', special: true },
 	{ type: BubbleType.HeartBubble, score: 0, probability: 3, image: 'heart', special: true },
