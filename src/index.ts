@@ -3,7 +3,8 @@ import { handleWebSocket } from './game-socket';
 const ALLOWED_ORIGINS = [
 	'https://bubler.club',
 	'https://bubbler-env-game-chris-projects-e9171c8b.vercel.app',
-	'https://test.game.bubler.club',
+	'https://test.redesign.bubler.club',
+	'https://odincash.org',
 ];
 
 export interface Env {
