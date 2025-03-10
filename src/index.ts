@@ -5,6 +5,7 @@ const ALLOWED_ORIGINS = [
 	'https://bubbler-env-game-chris-projects-e9171c8b.vercel.app',
 	'https://test.redesign.bubler.club',
 	'https://odincash.org',
+	'https://www.odincash.org',
 ];
 
 export interface Env {
