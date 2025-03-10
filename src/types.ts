@@ -37,6 +37,7 @@ export const BUBBLE_TYPES = [
 	{ type: BubbleType.Impossible, score: 2000, probability: 3, image: '5' }, // top g bubble
 	{ type: BubbleType.Rare, score: 400, probability: 8, image: '10' },
 	{ type: BubbleType.Rare, score: 400, probability: 8, image: '11' },
+	{ type: BubbleType.Rare, score: 400, probability: 8, image: '12' },
 	// { type: BubbleType.Rare, score: 400, probability: 8, image: '14' },
 	// { type: BubbleType.Rare, score: 400, probability: 8, image: '15' },
 	// { type: BubbleType.Rare, score: 400, probability: 8, image: '16' },
